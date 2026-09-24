@@ -22,6 +22,11 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: config.CLIENT_URL, credentials: true }));
 
+// Public endpoint for Docker/Kubernetes health checks.
+app.get("/api/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // CLOUDINARY Configuration
 cloudinary.config({
   cloud_name: config.CLOUDINARY_CLOUD_NAME,

@@ -1,0 +1,42 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: hoangquang153636/backend:latest
+    container_name: flowchat-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      # Values for the Docker Compose local deployment. They override the
+      # matching entries in backend/.env without changing that secret file.
+      PORT: "5000"
+      CLIENT_URL: ${FLOWCHAT_PUBLIC_URL:?Set FLOWCHAT_PUBLIC_URL in .env.compose}
+      APP_PUBLIC_URL: ${FLOWCHAT_PUBLIC_URL:?Set FLOWCHAT_PUBLIC_URL in .env.compose}
+    ports:
+      - "5000:5000"
+    networks:
+      - flowchat-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${FLOWCHAT_API_URL:?Set FLOWCHAT_API_URL in .env.compose}
+        VITE_SOCKET_URL: ${FLOWCHAT_SOCKET_URL:?Set FLOWCHAT_SOCKET_URL in .env.compose}
+        VITE_GOOGLE_WEB_CLIENT_ID: ${GOOGLE_WEB_CLIENT_ID:?Set GOOGLE_WEB_CLIENT_ID in .env.compose}
+    image: hoangquang153636/frontend:latest
+    container_name: flowchat-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8082:80"
+    networks:
+      - flowchat-network
+
+networks:
+  flowchat-network:
+    driver: bridge
