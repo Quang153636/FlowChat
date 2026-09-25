@@ -11,8 +11,8 @@ COPY . ./
 
 # Vite substitutes VITE_* variables at build time. These must be public URLs
 # reachable by the browser, not Docker-internal service names.
-ARG VITE_API_URL=https://192.168.100.168.nip.io:5000/api
-ARG VITE_SOCKET_URL=https://192.168.100.168.nip.io:5000
+ARG VITE_API_URL=http://192.168.100.168.nip.io:5000/api
+ARG VITE_SOCKET_URL=http://192.168.100.168.nip.io:5000
 ARG VITE_GOOGLE_WEB_CLIENT_ID
 ARG VITE_WEBRTC_STUN_URL=stun:stun.l.google.com:19302
 ARG VITE_WEBRTC_TURN_URL
