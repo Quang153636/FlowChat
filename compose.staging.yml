@@ -1,0 +1,41 @@
+# Staging deployment: pulls pre-built images only. It never builds source code.
+# Run with: docker compose --env-file .env.staging -f compose.staging.yml up -d
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-hoangquang153636/backend}:${IMAGE_TAG:-latest}
+    pull_policy: always
+    container_name: flowchat-staging-backend
+    restart: unless-stopped
+    env_file:
+      - ./.env.staging
+    environment:
+      PORT: "5000"
+      CLIENT_URL: ${FLOWCHAT_PUBLIC_URL:?Set FLOWCHAT_PUBLIC_URL in .env.staging}
+      APP_PUBLIC_URL: ${FLOWCHAT_PUBLIC_URL:?Set FLOWCHAT_PUBLIC_URL in .env.staging}
+    ports:
+      - "5000:5000"
+    networks:
+      - flowchat-staging-network
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:5000/api/health', r => process.exit(r.statusCode < 400 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-hoangquang153636/frontend}:${IMAGE_TAG:-latest}
+    pull_policy: always
+    container_name: flowchat-staging-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8082:80"
+    networks:
+      - flowchat-staging-network
+
+networks:
+  flowchat-staging-network:
+    driver: bridge
