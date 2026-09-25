@@ -98,7 +98,7 @@ pipeline {
       }
     }
 
-    stage('Deploy Staging') {
+    stage('Debug Staging Credential') {
   steps {
     withCredentials([
       string(
@@ -107,46 +107,28 @@ pipeline {
       )
     ]) {
       sh '''
+        set -e
+
         printf '%s\\n' "$STAGING_ENV" > .env.staging
 
-        echo "===== CHECK STAGING ENV ====="
+        echo "===== DEBUG CREDENTIAL ====="
 
-        if grep -q '^FLOWCHAT_PUBLIC_URL=' .env.staging; then
-          echo "FLOWCHAT_PUBLIC_URL: FOUND"
-        else
-          echo "FLOWCHAT_PUBLIC_URL: MISSING"
-          exit 1
-        fi
+        echo "Line count:"
+        wc -l < .env.staging
 
-        if grep -q '^MONGODB_CONNECTIONSTRING=' .env.staging; then
-          echo "MONGODB_CONNECTIONSTRING: FOUND"
-        else
-          echo "MONGODB_CONNECTIONSTRING: MISSING"
-          exit 1
-        fi
+        echo "Detected keys:"
+        awk -F= '/^[A-Z][A-Z0-9_]*=/ {print $1}' .env.staging | sort -u
 
-        if grep -q '^ACCESS_TOKEN_SECRET=' .env.staging; then
-          echo "ACCESS_TOKEN_SECRET: FOUND"
-        else
-          echo "ACCESS_TOKEN_SECRET: MISSING"
-          exit 1
-        fi
+        echo "Required variables:"
 
-        echo "===== CHECK DOCKER COMPOSE ====="
-
-        IMAGE_TAG="$IMAGE_TAG" docker compose \
-          --env-file .env.staging \
-          -f compose.staging.yml \
-          config > /dev/null
-
-        echo "Docker Compose configuration is valid."
-
-        echo "===== DEPLOY STAGING ====="
-
-        IMAGE_TAG="$IMAGE_TAG" docker compose \
-          --env-file .env.staging \
-          -f compose.staging.yml \
-          up -d
+        for VAR in FLOWCHAT_PUBLIC_URL MONGODB_CONNECTIONSTRING ACCESS_TOKEN_SECRET
+        do
+          if grep -q "^${VAR}=" .env.staging; then
+            echo "$VAR: FOUND"
+          else
+            echo "$VAR: MISSING"
+          fi
+        done
 
         rm -f .env.staging
       '''
