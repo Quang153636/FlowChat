@@ -40,11 +40,7 @@ pipeline {
   }
 
   stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
-    }
+    
 
     stage('Build backend') {
       steps {
@@ -109,9 +105,10 @@ pipeline {
     cp "$STAGING_ENV_FILE" .env.staging
 
     IMAGE_TAG="$IMAGE_TAG" docker compose \
-      --env-file .env.staging \
-      -f compose.staging.yml \
-      up -d
+  --project-name flowchat-staging \
+  --env-file .env.staging \
+  -f compose.staging.yml \
+  up -d
 
     rm -f .env.staging
   '''
@@ -170,8 +167,10 @@ pipeline {
                 cp "$PRODUCTION_ENV_FILE" .env.production
 
                 IMAGE_TAG="$IMAGE_TAG" docker compose \
-                  --env-file .env.production \
-                  -f compose.production.yml up -d
+  --project-name flowchat-production \
+  --env-file .env.production \
+  -f compose.production.yml \
+  up -d
 
                 rm -f .env.production
             '''
