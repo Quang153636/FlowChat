@@ -7,6 +7,10 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '10'))
   }
 
+  triggers {
+    githubPush()
+  }
+
   parameters {
     string(
       name: 'DOCKERHUB_NAMESPACE',
@@ -40,7 +44,6 @@ pipeline {
   }
 
   stages {
-    
 
     stage('Build backend') {
       steps {
@@ -96,118 +99,120 @@ pipeline {
     stage('Deploy Staging') {
       steps {
         withCredentials([
-  file(
-    credentialsId: 'staging-env',
-    variable: 'STAGING_ENV_FILE'
-  )
-]) {
+          file(
+            credentialsId: 'staging-env',
+            variable: 'STAGING_ENV_FILE'
+          )
+        ]) {
           sh '''
-    cp "$STAGING_ENV_FILE" .env.staging
+            cp "$STAGING_ENV_FILE" .env.staging
 
-    IMAGE_TAG="$IMAGE_TAG" docker compose \
-  --project-name flowchat-staging \
-  --env-file .env.staging \
-  -f compose.staging.yml \
-  up -d
+            IMAGE_TAG="$IMAGE_TAG" docker compose \
+              --project-name flowchat-staging \
+              --env-file .env.staging \
+              -f compose.staging.yml \
+              up -d
 
-    rm -f .env.staging
-  '''
-}
+            rm -f .env.staging
+          '''
+        }
       }
     }
 
     stage('Staging Health Check') {
       steps {
         sh '''
-      set -e
+          set -e
 
-      echo "Checking staging backend health..."
+          echo "Checking staging backend health..."
 
-      for i in $(seq 1 20); do
-        STATUS=$(docker inspect \
-          --format='{{.State.Health.Status}}' \
-          flowchat-staging-backend 2>/dev/null || true)
+          for i in $(seq 1 20); do
+            STATUS=$(docker inspect \
+              --format='{{.State.Health.Status}}' \
+              flowchat-staging-backend 2>/dev/null || true)
 
-        echo "Attempt $i/20 - Backend health: $STATUS"
+            echo "Attempt $i/20 - Backend health: $STATUS"
 
-        if [ "$STATUS" = "healthy" ]; then
-          echo "Staging backend is healthy."
-          exit 0
-        fi
+            if [ "$STATUS" = "healthy" ]; then
+              echo "Staging backend is healthy."
+              exit 0
+            fi
 
-        sleep 3
-      done
+            sleep 3
+          done
 
-      echo "Staging backend did not become healthy."
+          echo "Staging backend did not become healthy."
 
-      echo "===== BACKEND LOGS ====="
-      docker logs --tail 100 flowchat-staging-backend
+          echo "===== BACKEND LOGS ====="
+          docker logs --tail 100 flowchat-staging-backend
 
-      exit 1
-    '''
+          exit 1
+        '''
       }
     }
+
     stage('Manual Approval') {
       steps {
         input(
-            message: 'Staging is healthy. Deploy to production?',
-            ok: 'Deploy Production'
+          message: 'Staging is healthy. Deploy to production?',
+          ok: 'Deploy Production'
         )
       }
     }
+
     stage('Deploy Production') {
       steps {
         withCredentials([
-            file(
-                credentialsId: 'production-env',
-                variable: 'PRODUCTION_ENV_FILE'
-            )
+          file(
+            credentialsId: 'production-env',
+            variable: 'PRODUCTION_ENV_FILE'
+          )
         ]) {
-            sh '''
-                cp "$PRODUCTION_ENV_FILE" .env.production
+          sh '''
+            cp "$PRODUCTION_ENV_FILE" .env.production
 
-                IMAGE_TAG="$IMAGE_TAG" docker compose \
-  --project-name flowchat-production \
-  --env-file .env.production \
-  -f compose.production.yml \
-  up -d
+            IMAGE_TAG="$IMAGE_TAG" docker compose \
+              --project-name flowchat-production \
+              --env-file .env.production \
+              -f compose.production.yml \
+              up -d
 
-                rm -f .env.production
-            '''
+            rm -f .env.production
+          '''
         }
       }
     }
+
     stage('Production Health Check') {
       steps {
         sh '''
-            set -e
+          set -e
 
-            echo "Checking production backend health..."
+          echo "Checking production backend health..."
 
-            for i in $(seq 1 20); do
-                STATUS=$(docker inspect \
-                  --format='{{.State.Health.Status}}' \
-                  flowchat-production-backend 2>/dev/null || true)
+          for i in $(seq 1 20); do
+            STATUS=$(docker inspect \
+              --format='{{.State.Health.Status}}' \
+              flowchat-production-backend 2>/dev/null || true)
 
-                echo "Attempt $i/20 - Backend health: $STATUS"
+            echo "Attempt $i/20 - Production backend health: $STATUS"
 
-                if [ "$STATUS" = "healthy" ]; then
-                    echo "Production backend is healthy."
-                    exit 0
-                fi
+            if [ "$STATUS" = "healthy" ]; then
+              echo "Production backend is healthy."
+              exit 0
+            fi
 
-                sleep 3
-            done
+            sleep 3
+          done
 
-            echo "Production backend did not become healthy."
+          echo "Production backend did not become healthy."
 
-            echo "===== PRODUCTION BACKEND LOGS ====="
-            docker logs --tail 100 flowchat-production-backend
+          echo "===== PRODUCTION BACKEND LOGS ====="
+          docker logs --tail 100 flowchat-production-backend
 
-            exit 1
+          exit 1
         '''
       }
     }
   }
 }
-
