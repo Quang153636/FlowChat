@@ -150,6 +150,65 @@ pipeline {
     '''
       }
     }
+    stage('Manual Approval') {
+      steps {
+        input(
+            message: 'Staging is healthy. Deploy to production?',
+            ok: 'Deploy Production'
+        )
+      }
+    }
+    stage('Deploy Production') {
+      steps {
+        withCredentials([
+            file(
+                credentialsId: 'production-env',
+                variable: 'PRODUCTION_ENV_FILE'
+            )
+        ]) {
+            sh '''
+                cp "$PRODUCTION_ENV_FILE" .env.production
+
+                IMAGE_TAG="$IMAGE_TAG" docker compose \
+                  --env-file .env.production \
+                  -f compose.production.yml up -d
+
+                rm -f .env.production
+            '''
+        }
+      }
+    }
+    stage('Production Health Check') {
+      steps {
+        sh '''
+            set -e
+
+            echo "Checking production backend health..."
+
+            for i in $(seq 1 20); do
+                STATUS=$(docker inspect \
+                  --format='{{.State.Health.Status}}' \
+                  flowchat-production-backend 2>/dev/null || true)
+
+                echo "Attempt $i/20 - Backend health: $STATUS"
+
+                if [ "$STATUS" = "healthy" ]; then
+                    echo "Production backend is healthy."
+                    exit 0
+                fi
+
+                sleep 3
+            done
+
+            echo "Production backend did not become healthy."
+
+            echo "===== PRODUCTION BACKEND LOGS ====="
+            docker logs --tail 100 flowchat-production-backend
+
+            exit 1
+        '''
+      }
+    }
   }
 }
 
