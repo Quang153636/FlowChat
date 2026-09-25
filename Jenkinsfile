@@ -122,14 +122,32 @@ pipeline {
     stage('Staging Health Check') {
       steps {
         sh '''
-          echo "Checking staging backend health..."
+      set -e
 
-          curl --fail --retry 10 --retry-delay 3 \
-            http://localhost:5000/api/health
+      echo "Checking staging backend health..."
 
-          echo ""
+      for i in $(seq 1 20); do
+        STATUS=$(docker inspect \
+          --format='{{.State.Health.Status}}' \
+          flowchat-staging-backend 2>/dev/null || true)
+
+        echo "Attempt $i/20 - Backend health: $STATUS"
+
+        if [ "$STATUS" = "healthy" ]; then
           echo "Staging backend is healthy."
-        '''
+          exit 0
+        fi
+
+        sleep 3
+      done
+
+      echo "Staging backend did not become healthy."
+
+      echo "===== BACKEND LOGS ====="
+      docker logs --tail 100 flowchat-staging-backend
+
+      exit 1
+    '''
       }
     }
   }
