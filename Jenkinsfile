@@ -40,7 +40,6 @@ pipeline {
   }
 
   stages {
-
     stage('Checkout') {
       steps {
         checkout scm
@@ -101,22 +100,22 @@ pipeline {
     stage('Deploy Staging') {
       steps {
         withCredentials([
-          string(
-            credentialsId: 'staging-env',
-            variable: 'STAGING_ENV'
-          )
-        ]) {
+  file(
+    credentialsId: 'staging-env',
+    variable: 'STAGING_ENV_FILE'
+  )
+]) {
           sh '''
-            printf '%s\\n' "$STAGING_ENV" > .env.staging
+    cp "$STAGING_ENV_FILE" .env.staging
 
-            IMAGE_TAG="$IMAGE_TAG" docker compose \
-              --env-file .env.staging \
-              -f compose.staging.yml \
-              up -d
+    IMAGE_TAG="$IMAGE_TAG" docker compose \
+      --env-file .env.staging \
+      -f compose.staging.yml \
+      up -d
 
-            rm -f .env.staging
-          '''
-        }
+    rm -f .env.staging
+  '''
+}
       }
     }
 
