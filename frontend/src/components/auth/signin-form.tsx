@@ -61,7 +61,7 @@ export function SigninForm({ className, ...props }: React.ComponentProps<"div">)
                   />
                 </a>
 
-                <h1 className="text-2xl font-bold">Chào mừng quay lại</h1>
+                <h1 className="text-2xl font-bold">Chào mừng quay lại Quang</h1>
                 <p className="text-muted-foreground text-balance">
                   Đăng nhập vào tài khoản FlowChat của bạn
                 </p>
