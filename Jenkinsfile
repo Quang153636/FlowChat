@@ -16,13 +16,13 @@ pipeline {
 
     string(
       name: 'VITE_API_URL',
-      defaultValue: 'http://localhost:5000/api',
+      defaultValue: 'http://192.168.100.168.nip.io:5000/api',
       description: 'API URL embedded in the frontend image'
     )
 
     string(
       name: 'VITE_SOCKET_URL',
-      defaultValue: 'http://localhost:5000',
+      defaultValue: 'http://192.168.100.168.nip.io:5000',
       description: 'Socket.IO URL embedded in the frontend image'
     )
 
