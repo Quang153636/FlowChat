@@ -24,7 +24,8 @@ services:
       start_period: 15s
 
   frontend:
-    image: ${FRONTEND_IMAGE:-hoangquang153636/frontend}:${IMAGE_TAG:-latest}
+    # image: ${FRONTEND_IMAGE:-hoangquang153636/frontend}:${IMAGE_TAG:-latest}
+    image: ${FRONTEND_IMAGE:-hoangquang153636/frontend}:${FRONTEND_TAG:-latest}
     pull_policy: always
     container_name: flowchat-staging-frontend
     restart: unless-stopped

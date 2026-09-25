@@ -41,10 +41,19 @@ pipeline {
     BACKEND_IMAGE = "${params.DOCKERHUB_NAMESPACE}/backend"
     FRONTEND_IMAGE = "${params.DOCKERHUB_NAMESPACE}/frontend"
     IMAGE_TAG = "${BUILD_NUMBER}"
+
+    //Update url stagging and production
+    STAGING_FRONTEND_TAG = "${BUILD_NUMBER}-staging"
+    PRODUCTION_FRONTEND_TAG = "${BUILD_NUMBER}-production"
+
+    STAGING_API_URL = 'http://192.168.100.168.nip.io:5000/api'
+    STAGING_SOCKET_URL = 'http://192.168.100.168.nip.io:5000'
+
+    PRODUCTION_API_URL = 'http://192.168.100.168.nip.io:5001/api'
+    PRODUCTION_SOCKET_URL = 'http://192.168.100.168.nip.io:5001'
   }
 
   stages {
-
     stage('Build backend') {
       steps {
         sh '''
@@ -57,21 +66,47 @@ pipeline {
       }
     }
 
-    stage('Build frontend') {
+    // stage('Build frontend') {
+    //   steps {
+    //     sh '''
+    //       docker build \
+    //         --file frontend/Dockerfile \
+    //         --build-arg "VITE_API_URL=$VITE_API_URL" \
+    //         --build-arg "VITE_SOCKET_URL=$VITE_SOCKET_URL" \
+    //         --build-arg "VITE_GOOGLE_WEB_CLIENT_ID=$VITE_GOOGLE_WEB_CLIENT_ID" \
+    //         --tag "$FRONTEND_IMAGE:$IMAGE_TAG" \
+    //         --tag "$FRONTEND_IMAGE:latest" \
+    //         frontend
+    //     '''
+    //   }
+    // }
+    stage('Build frontend - Staging') {
       steps {
         sh '''
-          docker build \
-            --file frontend/Dockerfile \
-            --build-arg "VITE_API_URL=$VITE_API_URL" \
-            --build-arg "VITE_SOCKET_URL=$VITE_SOCKET_URL" \
-            --build-arg "VITE_GOOGLE_WEB_CLIENT_ID=$VITE_GOOGLE_WEB_CLIENT_ID" \
-            --tag "$FRONTEND_IMAGE:$IMAGE_TAG" \
-            --tag "$FRONTEND_IMAGE:latest" \
-            frontend
-        '''
+      docker build \
+        --file frontend/Dockerfile \
+        --build-arg "VITE_API_URL=$STAGING_API_URL" \
+        --build-arg "VITE_SOCKET_URL=$STAGING_SOCKET_URL" \
+        --build-arg "VITE_GOOGLE_WEB_CLIENT_ID=$VITE_GOOGLE_WEB_CLIENT_ID" \
+        --tag "$FRONTEND_IMAGE:$STAGING_FRONTEND_TAG" \
+        frontend
+    '''
       }
     }
 
+    stage('Build frontend - Production') {
+      steps {
+        sh '''
+      docker build \
+        --file frontend/Dockerfile \
+        --build-arg "VITE_API_URL=$PRODUCTION_API_URL" \
+        --build-arg "VITE_SOCKET_URL=$PRODUCTION_SOCKET_URL" \
+        --build-arg "VITE_GOOGLE_WEB_CLIENT_ID=$VITE_GOOGLE_WEB_CLIENT_ID" \
+        --tag "$FRONTEND_IMAGE:$PRODUCTION_FRONTEND_TAG" \
+        frontend
+    '''
+      }
+    }
     stage('Docker Hub') {
       steps {
         withCredentials([usernamePassword(
@@ -87,8 +122,8 @@ pipeline {
             docker push "$BACKEND_IMAGE:$IMAGE_TAG"
             docker push "$BACKEND_IMAGE:latest"
 
-            docker push "$FRONTEND_IMAGE:$IMAGE_TAG"
-            docker push "$FRONTEND_IMAGE:latest"
+            docker push "$FRONTEND_IMAGE:$STAGING_FRONTEND_TAG"
+            docker push "$FRONTEND_IMAGE:$PRODUCTION_FRONTEND_TAG"
 
             docker logout
           '''
@@ -107,12 +142,14 @@ pipeline {
           sh '''
             cp "$STAGING_ENV_FILE" .env.staging
 
-            IMAGE_TAG="$IMAGE_TAG" docker compose \
+            
+            IMAGE_TAG="$IMAGE_TAG" \
+            FRONTEND_TAG="$STAGING_FRONTEND_TAG" \
+            docker compose \
               --project-name flowchat-staging \
               --env-file .env.staging \
               -f compose.staging.yml \
               up -d
-
             rm -f .env.staging
           '''
         }
@@ -171,7 +208,11 @@ pipeline {
           sh '''
             cp "$PRODUCTION_ENV_FILE" .env.production
 
-            IMAGE_TAG="$IMAGE_TAG" docker compose \
+            
+
+            IMAGE_TAG="$IMAGE_TAG" \
+            FRONTEND_TAG="$PRODUCTION_FRONTEND_TAG" \
+            docker compose \
               --project-name flowchat-production \
               --env-file .env.production \
               -f compose.production.yml \
