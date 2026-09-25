@@ -32,7 +32,7 @@ pipeline {
 
     string(
       name: 'VITE_GOOGLE_WEB_CLIENT_ID',
-      defaultValue: '',
+      defaultValue: '148026452250-h7gmgrskqvt4nao9r95uoplu4tfc9msh.apps.googleusercontent.com',
       description: 'Optional Google OAuth Web Client ID'
     )
   }
