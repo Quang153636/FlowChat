@@ -98,43 +98,27 @@ pipeline {
       }
     }
 
-    stage('Debug Staging Credential') {
-  steps {
-    withCredentials([
-      string(
-        credentialsId: 'staging-env',
-        variable: 'STAGING_ENV'
-      )
-    ]) {
-      sh '''
-        set -e
+    stage('Deploy Staging') {
+      steps {
+        withCredentials([
+          string(
+            credentialsId: 'staging-env',
+            variable: 'STAGING_ENV'
+          )
+        ]) {
+          sh '''
+            printf '%s\\n' "$STAGING_ENV" > .env.staging
 
-        printf '%s\\n' "$STAGING_ENV" > .env.staging
+            IMAGE_TAG="$IMAGE_TAG" docker compose \
+              --env-file .env.staging \
+              -f compose.staging.yml \
+              up -d
 
-        echo "===== DEBUG CREDENTIAL ====="
-
-        echo "Line count:"
-        wc -l < .env.staging
-
-        echo "Detected keys:"
-        awk -F= '/^[A-Z][A-Z0-9_]*=/ {print $1}' .env.staging | sort -u
-
-        echo "Required variables:"
-
-        for VAR in FLOWCHAT_PUBLIC_URL MONGODB_CONNECTIONSTRING ACCESS_TOKEN_SECRET
-        do
-          if grep -q "^${VAR}=" .env.staging; then
-            echo "$VAR: FOUND"
-          else
-            echo "$VAR: MISSING"
-          fi
-        done
-
-        rm -f .env.staging
-      '''
+            rm -f .env.staging
+          '''
+        }
+      }
     }
-  }
-}
 
     stage('Staging Health Check') {
       steps {
