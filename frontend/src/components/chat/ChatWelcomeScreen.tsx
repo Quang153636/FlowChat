@@ -17,7 +17,7 @@ const ChatWelcomeScreen = () => {
             Chọn một cuộc hội thoại để bắt đầu chat!
           </p>
           <p className="text-muted-foreground">
-            Hello
+            Hellooooo
           </p>
         </div>
       </div>
