@@ -20,7 +20,18 @@ const PORT = config.PORT;
 // middlewares
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: config.CLIENT_URL, credentials: true }));
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://flow-chat-frontend-iota.vercel.app",
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
 
 // Public endpoint for Docker/Kubernetes health checks.
 app.get("/api/health", (_req, res) => {

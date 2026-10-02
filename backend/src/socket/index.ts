@@ -14,9 +14,14 @@ const OBJECT_ID_PATTERN = /^[a-f\d]{24}$/i;
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://flow-chat-frontend-iota.vercel.app",
+];
+
 const io = new Server(server, {
   cors: {
-    origin: config.CLIENT_URL,
+    origin: allowedOrigins,
     credentials: true,
   },
 });

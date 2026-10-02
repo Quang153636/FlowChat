@@ -14,7 +14,7 @@ const ChatWelcomeScreen = () => {
             Chào mừng bạn đến với FlowChat!
           </h2>
           <p className="text-muted-foreground">
-            Chọn 1 cuộc hội thoại để bắt đầu chat!
+            Chọn một cuộc hội thoại để bắt đầu chat!
           </p>
         </div>
       </div>
